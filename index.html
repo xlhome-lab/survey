@@ -556,24 +556,29 @@
             <span class="counter-dot" id="rdot2"></span>
             <span class="count-num" id="reason-count">0</span>/2
             <span data-i18n="reason_label"></span>
-            &nbsp;&middot;&nbsp;
-            <span class="count-num" id="subreason-count">0</span>/2
-            <span data-i18n="subreason_label"></span>
+            <span id="subreason-counter-inline">
+              &nbsp;&middot;&nbsp;
+              <span class="count-num" id="subreason-count">0</span>/2
+              <span data-i18n="subreason_label"></span>
+            </span>
           </div>
         </div>
       </div>
 
       <div class="reason-grid" id="reason-grid"></div>
 
-      <!-- SUBREASON (rendered dynamically) -->
-      <div id="subreason-section" class="subreason-panel"></div>
+      <!-- Detail untuk Detractor saja -->
+      <div id="detractor-details">
+        <!-- SUBREASON (rendered dynamically) -->
+        <div id="subreason-section" class="subreason-panel"></div>
 
-      <!-- FREETEXT -->
-      <div class="divider"></div>
-      <div class="freetext-section">
-        <label for="freetext-input"><span data-i18n="freetext_label"></span> <span style="font-weight:400;color:var(--text-secondary);" data-i18n="freetext_optional"></span></label>
-        <textarea id="freetext-input" data-i18n-placeholder="freetext_placeholder" maxlength="500" oninput="updateCharCount()"></textarea>
-        <div class="char-count"><span id="char-count">0</span>/500</div>
+        <!-- FREETEXT -->
+        <div class="divider"></div>
+        <div class="freetext-section">
+          <label for="freetext-input"><span data-i18n="freetext_label"></span> <span style="font-weight:400;color:var(--text-secondary);" data-i18n="freetext_optional"></span></label>
+          <textarea id="freetext-input" data-i18n-placeholder="freetext_placeholder" maxlength="500" oninput="updateCharCount()"></textarea>
+          <div class="char-count"><span id="char-count">0</span>/500</div>
+        </div>
       </div>
 
       <button class="submit-btn visible" id="submit-btn" onclick="submitSurvey()"></button>
@@ -873,6 +878,21 @@ function onScoreClick() {
   const rs = document.getElementById('reason-section');
   rs.style.display = 'block';
 
+  // Hanya Detractor yang melihat subreason dan kolom freetext.
+  const isDetractor = selectedCategory === 'detractor';
+  document.getElementById('detractor-details').style.display = isDetractor ? 'block' : 'none';
+  document.getElementById('subreason-counter-inline').style.display = isDetractor ? 'inline' : 'none';
+
+  // Reset detail Detractor jika responden mengubah skor ke Passive/Promoter.
+  if (!isDetractor) {
+    selectedSubreasons = {};
+    selectedChannels = {};
+    document.getElementById('freetext-input').value = '';
+    document.getElementById('char-count').textContent = '0';
+  }
+  renderSubreasonSection();
+  updateCounter();
+
   document.getElementById('dot1').classList.add('done');
   document.getElementById('dot2').classList.add('active');
 
@@ -934,6 +954,11 @@ function toggleReason(reasonId) {
 // ===== RENDER SUBREASON SECTION =====
 function renderSubreasonSection() {
   const panel = document.getElementById('subreason-section');
+  if (selectedCategory !== 'detractor') {
+    panel.classList.remove('visible');
+    panel.innerHTML = '';
+    return;
+  }
   if (selectedReasons.length === 0) {
     panel.classList.remove('visible');
     panel.innerHTML = '';
@@ -1080,7 +1105,7 @@ async function submitSurvey() {
     score: selectedScore,
     category: selectedCategory,
     reasons: reasonsPayload,
-    freetext: document.getElementById('freetext-input').value.trim(),
+    freetext: selectedCategory === 'detractor' ? document.getElementById('freetext-input').value.trim() : '',
     custId: custId || null,
     lang: currentLang,
     userAgent: navigator.userAgent
